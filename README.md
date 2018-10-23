@@ -48,6 +48,20 @@ Unlike the SSC file, we impute all the samples and then later, post-imputation, 
 perl ~/SFARI/liftOverPlink/HRC-1000G-check-bim.pl -b ~/LEAP_PARIS/QC2output.bim -f ~/LEAP_PARIS/QC2output.frq -r ~/SFARI/liftOverPlink/1000GP_Phase3_combined.legend -g -p EUR
 ```
 
+Create files for imputation
+
+```bash
+./plink --bfile QC2output --exclude Exclude-QC2output-1000G.txt --make-bed --out TEMP1
+./plink --bfile TEMP1 --update-map Chromosome-QC2output-1000G.txt --update-chr --make-bed --out TEMP2
+./plink --bfile TEMP2 --update-map Position-QC2output-1000G.txt --make-bed --out TEMP3
+./plink --bfile TEMP3 --flip Strand-Flip-QC2output-1000G.txt --make-bed --out TEMP4
+./plink --bfile TEMP4 --reference-allele Force-Allele1-QC2output-1000G.txt --make-bed --out QC2output-updated
+rm TEMP*
+  
+for i in {1..22}; do ./plink --bfile QC2output-updated --reference-allele Force-Allele1-QC2output-1000G.txt --chr ${i} --recode-vcf --out LEAP_file_chr${i}; done
+for i in {1..22}; do vcf-sort LEAP_file_chr${i}.vcf | bgzip -c > LEAP_file_chr${i}.vcf.gz; done
+for i in {1..22}; do rm LEAP_file_chr${i}.vcf | rm LEAP_file_chr${i}.log; done
+```
 
 
 
