@@ -1,4 +1,5 @@
 # LEAP_PARIS_IMPUTATION
+Please note, this is work in progress
 
 By and large, this follows the same format as here: https://github.com/autism-research-centre/SSC_liftover_imputation
 
@@ -66,3 +67,61 @@ for i in {1..22}; do rm LEAP_file_chr${i}.vcf | rm LEAP_file_chr${i}.log; done
 
 
 ## PARIS
+
+First, seperate the files into the two files based on their arrays.
+```R
+info = fread("HOE-HO5_PARIS_For-Varun_Info (1)")
+keep1 = subset(info, Techno_version == "HumanOmni5Exome-4v1-1_A")
+keep2 = subset(info, Techno_version == "humanomni5exome-4v1_a")
+keep3 = subset(info, Techno_version == "humanomniexpress-24-v1-1-a")
+keep1 = keep1[,2:3]
+keep2 = keep2[,2:3]
+keep3 = keep3[,2:3]
+write.table(keep1, file = "pariskeepexome1.txt", row.names = F, col.names = F, quote = F)
+write.table(keep2, file = "pariskeepexome2.txt", row.names = F, col.names = F, quote = F)
+write.table(keep3, file = "pariskeepexpress.txt", row.names = F, col.names = F, quote = F)
+
+```
+
+Next, seperate the two files in bash
+
+```bash
+./plink --bfile HOE-HO5_PARIS_For-Varun --keep pariskeepexome1.txt --make-bed --out paris_exome1
+./plink --bfile HOE-HO5_PARIS_For-Varun --keep pariskeepexome2.txt --make-bed --out paris_exome2
+./plink --bfile HOE-HO5_PARIS_For-Varun --keep pariskeepexpress.txt --make-bed --out paris_express
+
+```
+
+Now QC and all of that
+
+```bash
+./plink --bfile paris_express  --geno 0.1 --mind 0.1 --hwe 0.000001 --me 0.05 0.1  --make-bed --out QC1outputparisexpress
+./plink --bfile QC1outputparisexpress --het --out QC1checkhetparisexpress
+./plink --bfile QC1output --check-sex --out QC1checksex
+```
+
+```R
+sex = read.delim("QC1checksex.sexcheck", sep = "")
+head(sex)
+sexproblem = subset(sex, STATUS == "PROBLEM")
+
+
+het = read.delim("QC1checkhet.het", sep = "")
+het$HET = (het$N.NM. - het$O.HOM.)/het$N.NM. #create heterozygosity stats
+
+mean = mean(het$HET)
+sd = sd(het$HET)
+het$Z = (het$HET - mean)/sd #create Z scores of heterozygosity
+
+hetoutlier = subset(het, abs(Z) > 3)
+
+het2 = hetoutlier[,c(1:2)]
+sex2 = sexproblem[,c(1:2)]
+failedsample = rbind(het2, sex2)
+
+write.table(failedsample, file = "failedsample.txt", row.names = F, col.names = T, quote = F)
+```
+
+```bash
+./plink --bfile QC1output --remove failedsample.txt --make-bed --out QC2output
+```
