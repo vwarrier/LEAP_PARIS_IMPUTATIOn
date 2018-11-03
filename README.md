@@ -102,3 +102,35 @@ Now follow the QC pipeline for LEAP, and create the imputation files. Remember t
 ```
 
 Now follow the QC pipeline for LEAP, and create the imputation files. Remember to rename the files at the last stage. This creates the files for the Express. Remove it to a seperate file.
+
+## Post imputation
+
+Follow some of the commands from SPARK, and for remaining commands, follow this. 
+
+```bash
+
+for i in {1..22};do ./plink --bfile ./PARISexome_files/Imputed/PARISexome_chr${i}  --make-bed --biallelic-only --maf 0.05 --geno 0.05 --hwe 0.000001 --out ./PARISexome_files/Imputed/PARISexomeround1_chr${i}; done
+for i in {1..22};do ./plink --bfile ./PARISexpress_files/Imputed/PARISexome_chr${i}  --make-bed --biallelic-only --maf 0.05 --geno 0.05 --hwe 0.000001 --out ./PARISexpress_files/Imputed/PARISexpressround1_chr${i}; done
+for i in {1..22};do ./plink --bfile ./LEAP_files/Imputed/LEAP_chr${i}  --make-bed --biallelic-only --maf 0.05 --geno 0.05 --hwe 0.000001 --out ./LEAP_files/Imputed/LEAPround1_chr${i}; done
+
+
+
+./plink --bfile ./PARISexome_files/Imputed/PARISexomeround1_chr22 --merge-list ./PARISexome_files/Imputed/mergelist.txt --make-bed  --out ./PARISexome_files/Imputed/Parisexome_merged
+./plink --bfile ./PARISexpress_files/Imputed/PARISexpressround1_chr22 --merge-list ./PARISexpress_files/Imputed/mergelist.txt --make-bed  --out ./PARISexpress_files/Imputed/Parisexpress_merged
+./plink --bfile ./LEAP_files/Imputed/LEAPround1_chr22 --merge-list ./LEAP_files/Imputed/mergelist.txt --make-bed  --out ./LEAP_files/Imputed/LEAP_merged
+
+
+for i in {1..22}; do ./plink --bfile ./PARISexome_files/Imputed/PARISexomeround1_chr${i} --exclude ./PARISexome_files/Imputed/Parisexome_merged-merge.missnp --make-bed --out ./PARISexome_files/Imputed/PARISexomeround1_chr${i}; done
+for i in {1..22}; do ./plink --bfile ./PARISexpress_files/Imputed/PARISexpressround1_chr${i} --exclude ./PARISexpress_files/Imputed/Parisexpress_merged-merge.missnp --make-bed --out ./PARISexpress_files/Imputed/PARISexpressround1_chr${i}; done
+for i in {1..22}; do ./plink --bfile ./LEAP_files/Imputed/LEAPround1_chr${i} --exclude ./LEAP_files/Imputed/LEAP_merged-merge.missnp --make-bed --out ./LEAP_files/Imputed/LEAPround1_chr${i}; done
+
+
+./plink --bfile ./PARISexome_files/Imputed/PARISexomeround1_chr22 --merge-list ./PARISexome_files/Imputed/mergelist.txt --make-bed  --out ./PARISexome_files/Imputed/Parisexome_merged2
+./plink --bfile ./PARISexpress_files/Imputed/PARISexpressround1_chr22 --merge-list ./PARISexpress_files/Imputed/mergelist.txt --make-bed  --out ./PARISexpress_files/Imputed/Parisexpress_merged2
+./plink --bfile ./LEAP_files/Imputed/LEAPround1_chr22 --merge-list ./LEAP_files/Imputed/mergelist.txt --make-bed  --out ./LEAP_files/Imputed/LEAP_merged2
+
+
+./plink --bfile ./PARISexome_files/Imputed/Parisexome_merged2 --maf 0.01 --update-name ~/SFARI/liftOverPlink/plinkrecodingfile.txt --hwe 0.000001 --geno 0.05 --mind 0.05 --make-bed --out ParisexomemergedQC
+./plink --bfile ./PARISexpress_files/Imputed/Parisexpress_merged2 --maf 0.01 --update-name ~/SFARI/liftOverPlink/plinkrecodingfile.txt --hwe 0.000001 --geno 0.05 --mind 0.05 --make-bed --out ParisexpressmergedQC
+./plink --bfile ./LEAP_files/Imputed/LEAP_merged2 --maf 0.01 --update-name ~/SFARI/liftOverPlink/plinkrecodingfile.txt --hwe 0.000001 --geno 0.05 --mind 0.05 --make-bed --out LEAPmergedQC
+```
