@@ -134,3 +134,80 @@ for i in {1..22}; do ./plink --bfile ./LEAP_files/Imputed/LEAPround1_chr${i} --e
 ./plink --bfile ./PARISexpress_files/Imputed/Parisexpress_merged2 --maf 0.01 --update-name ~/SFARI/liftOverPlink/plinkrecodingfile.txt --hwe 0.000001 --geno 0.05 --mind 0.05 --make-bed --out ParisexpressmergedQC
 ./plink --bfile ./LEAP_files/Imputed/LEAP_merged2 --maf 0.01 --update-name ~/SFARI/liftOverPlink/plinkrecodingfile.txt --hwe 0.000001 --geno 0.05 --mind 0.05 --make-bed --out LEAPmergedQC
 ```
+
+Update the fam files
+
+```{R}
+library(data.table)
+library(tidyr)
+
+LEAP_fam = fread("LEAPmergedQC.fam")
+Express_fam = fread("ParisexpressmergedQC.fam")
+Exome_fam = fread("ParisexomemergedQC.fam")
+
+Exome_old = fread("/mnt/b2/home4/arc/vw260/LEAP_PARIS/PARISexome_files/QC2output.fam")
+Express_old = fread("/mnt/b2/home4/arc/vw260/LEAP_PARIS/QC2output.fam")
+LEAP_old = fread("/mnt/b2/home4/arc/vw260/LEAP_PARIS/LEAP_files/QC2output.fam")
+
+LEAP_fam = LEAP_fam %>% separate(V2, into = c('FID', 'IID'), sep = 6)
+Express_fam = Express_fam %>% separate(V2, into = c('FID', 'IID'), sep = 6)
+Exome_fam = Exome_fam %>% separate(V2, into = c('FID', 'IID'), sep = 6)
+
+foo <- data.frame(do.call('rbind', strsplit(as.character(LEAP_fam$V2),'_',fixed=TRUE)))
+LEAP_fam = cbind(LEAP_fam, foo)
+
+foo <- data.frame(do.call('rbind', strsplit(as.character(Express_fam$V2),'_',fixed=TRUE)))
+Express_fam = cbind(Express_fam, foo)
+
+foo <- data.frame(do.call('rbind', strsplit(as.character(Exome_fam$V2),'_',fixed=TRUE)))
+Exome_fam = cbind(Exome_fam, foo)
+
+Express_all = merge(Express_fam, Express_old, by.x = "X2", by.y = "V2")
+Exome_all = merge(Exome_fam, Exome_old, by.x = "X2", by.y = "V2")
+LEAP_all = merge(LEAP_fam, LEAP_old, by.x = "X2", by.y = "V2")
+
+Express_updatenames = Express_all[,c("V1.x", "V2", "X1", "X2")]
+Exome_updatenames = Exome_all[,c("V1.x", "V2", "X1", "X2")]
+LEAP_updatenames = LEAP_all[,c("V1.x", "V2", "X1", "X2")]
+
+write.table(Express_updatenames, file = "Express_updatenames.txt", row.names = F, col.names = F, quote = F)
+write.table(Exome_updatenames, file = "Exome_updatenames.txt", row.names = F, col.names = F, quote = F)
+write.table(LEAP_updatenames, file = "LEAP_updatenames.txt", row.names = F, col.names = F, quote = F)
+
+Express_updatesex = Express_all[,c("X1", "X2", "V5.y")]
+Exome_updatesex = Exome_all[,c("X1", "X2", "V5.y")]
+LEAP_updatesex = LEAP_all[,c("X1", "X2", "V5.y")]
+
+Express_updatepheno = Express_all[,c("X1", "X2", "V6.y")]
+Exome_updatepheno = Exome_all[,c("X1", "X2", "V6.y")]
+LEAP_updatepheno = LEAP_all[,c("X1", "X2", "V6.y")]
+
+Express_updateparents = Express_all[,c("X1", "X2", "V3.y", "V4.y")]
+Exome_updateparents = Exome_all[,c("X1", "X2", "V3.y", "V4.y")]
+
+write.table(Express_updatesex, file = "Express_updatesex.txt", row.names = F, col.names = F, quote = F)
+write.table(Exome_updatesex, file = "Exome_updatesex.txt", row.names = F, col.names = F, quote = F)
+write.table(LEAP_updatesex, file = "LEAP_updatesex.txt", row.names = F, col.names = F, quote = F)
+
+write.table(Express_updatepheno, file = "Express_updatepheno.txt", row.names = F, col.names = F, quote = F)
+write.table(Exome_updatepheno, file = "Exome_updatepheno.txt", row.names = F, col.names = F, quote = F)
+write.table(LEAP_updatepheno, file = "LEAP_updatepheno.txt", row.names = F, col.names = F, quote = F)
+
+write.table(Express_updateparents, file = "Express_updateparents.txt", row.names = F, col.names = F, quote = F)
+write.table(Exome_updateparents, file = "Exome_updateparents.txt", row.names = F, col.names = F, quote = F)
+
+```
+
+Now do what you need to do in Plink
+
+```bash
+
+./plink --bfile ParisexpressmergedQC --update-ids Express_updatenames.txt --make-bed  --out ParisexpressmergedQC2
+./plink --bfile ParisexomemergedQC --update-ids Exome_updatenames.txt --make-bed  --out ParisexomemergedQC2
+./plink --bfile LEAPmergedQC --update-ids LEAP_updatenames.txt --make-bed  --out LEAPmergedQC2
+
+
+./plink --bfile LEAPmergedQC2  --update-sex LEAP_updatesex.txt --pheno LEAP_updatepheno.txt --make-bed  --out LEAPmergedQC2
+ ./plink --bfile ParisexomemergedQC2 --update-parents Exome_updateparents.txt --update-sex Exome_updatesex.txt --pheno Exome_updatepheno.txt --make-bed  --out ParisexomemergedQC2
+ ./plink --bfile ParisexpressmergedQC2 --update-parents Express_updateparents.txt --update-sex Express_updatesex.txt --pheno Express_updatepheno.txt --make-bed  --out ParisexpressmergedQC2
+```
