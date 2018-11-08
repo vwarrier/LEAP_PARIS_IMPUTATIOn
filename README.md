@@ -196,6 +196,14 @@ write.table(LEAP_updatepheno, file = "LEAP_updatepheno.txt", row.names = F, col.
 write.table(Express_updateparents, file = "Express_updateparents.txt", row.names = F, col.names = F, quote = F)
 write.table(Exome_updateparents, file = "Exome_updateparents.txt", row.names = F, col.names = F, quote = F)
 
+LEAP_pheno = fread("./LEAP_files/LEAP_Clinical-Info_forVarun_PSC2_short (1)")
+LEAP_fam = fread("LEAPmergedQC2.fam")
+
+LEAP_updatefam = LEAP_pheno[,c("Barcodes", "Barcodes", "FID_PSC2", "IID_PSC2")]
+LEAP_updateparents = LEAP_pheno[,c("FID_PSC2", "IID_PSC2", "PSC2_father", "PSC2_mother")]
+
+write.table(LEAP_updatefam, file = "LEAPupdatefam.txt", row.names = F, col.names = F, quote = F)
+write.table(LEAP_updateparents, file = "LEAPupdateparents.txt", row.names = F, col.names = F, quote = F)
 ```
 
 Now do what you need to do in Plink
@@ -210,4 +218,6 @@ Now do what you need to do in Plink
 ./plink --bfile LEAPmergedQC2  --update-sex LEAP_updatesex.txt --pheno LEAP_updatepheno.txt --make-bed  --out LEAPmergedQC2
  ./plink --bfile ParisexomemergedQC2 --update-parents Exome_updateparents.txt --update-sex Exome_updatesex.txt --pheno Exome_updatepheno.txt --make-bed  --out ParisexomemergedQC2
  ./plink --bfile ParisexpressmergedQC2 --update-parents Express_updateparents.txt --update-sex Express_updatesex.txt --pheno Express_updatepheno.txt --make-bed  --out ParisexpressmergedQC2
+ ./plink --bfile LEAPmergedQC2 --update-ids LEAPupdatefam.txt --make-bed --out LEAPmergedQC3 
+ ./plink --bfile LEAPmergedQC3 --update-parents LEAPupdateparents.txt --make-bed --out LEAPmergedQC3
 ```
