@@ -135,7 +135,7 @@ for i in {1..22}; do ./plink --bfile ./LEAP_files/Imputed/LEAPround1_chr${i} --e
 ./plink --bfile ./LEAP_files/Imputed/LEAP_merged2 --maf 0.01 --update-name ~/SFARI/liftOverPlink/plinkrecodingfile.txt --hwe 0.000001 --geno 0.05 --mind 0.05 --make-bed --out LEAPmergedQC
 ```
 
-Update the fam files
+## Update the fam files
 
 ```{R}
 library(data.table)
@@ -220,4 +220,50 @@ Now do what you need to do in Plink
  ./plink --bfile ParisexpressmergedQC2 --update-parents Express_updateparents.txt --update-sex Express_updatesex.txt --pheno Express_updatepheno.txt --make-bed  --out ParisexpressmergedQC2
  ./plink --bfile LEAPmergedQC2 --update-ids LEAPupdatefam.txt --make-bed --out LEAPmergedQC3 
  ./plink --bfile LEAPmergedQC3 --update-parents LEAPupdateparents.txt --make-bed --out LEAPmergedQC3
+```
+
+## Create files with the pheno
+```{R}
+setwd("/mnt/b2/home4/arc/vw260/LEAP_PARIS/")
+library(data.table)
+paris_pheno = fread("PARIS_all_pheno.txt")
+Parisexpress_fam = fread("ParisexpressmergedQC2.fam")
+Parisexome_fam = fread("ParisexomemergedQC2.fam")
+paris_pheno$array = ifelse(paris_pheno$IID %in% Parisexpress_fam$V2, "Express", "NA")
+paris_pheno$array = ifelse(paris_pheno$IID %in% Parisexome_fam$V2, "Exome", paris_pheno$array)
+
+
+LEAP_pheno = fread("./LEAP_files/LEAP_Clinical-Info_forVarun_PSC2_short (1)")
+LEAP_fam = fread("LEAPmergedQC3.fam")
+
+LEAP_pheno_2 = subset(LEAP_pheno, RBS_total > 0 & RBS_total < 100)
+LEAP_keep_forGRM = LEAP_pheno_2[,c(1:2)]
+write.table(LEAP_keep_forGRM, file = "LEAP_keep_forGRM.txt", row.names = F, col.names = F, quote = F
+
+            
+paris_express_pheno = subset(paris_pheno, array == "Express")
+paris_express_keep = subset(paris_express_pheno, RBSR_NONCOMPLET == "0")
+write.table(paris_express_keep[,c("FID", "IID")], file = "PARISexpress_keep_forGRM.txt", row.names = F, col.names = F, quote = F)
+
+
+paris_exome_pheno = subset(paris_pheno, array == "Exome")
+paris_exome_keep = subset(paris_exome_pheno, RBSR_NONCOMPLET == "0")
+write.table(paris_exome_keep[,c("FID", "IID")], file = "PARISexome_keep_forGRM.txt", row.names = F, col.names = F, quote = F)
+
+```
+
+Now update in plink, and merge the files
+```bash
+./plink --bfile LEAPmergedQC3 --keep LEAP_keep_forGRM.txt --make-bed --out LEAPwithpheno
+./plink --bfile ParisexpressmergedQC2 --keep PARISexpress_keep_forGRM.txt --make-bed --out Parisexpresswithpheno
+./plink --bfile ParisexomemergedQC2 --keep PARISexome_keep_forGRM.txt --make-bed --out Parisexomewithpheno
+
+./plink --bfile LEAPwithpheno --merge-list mergeparisfileswithpheno.txt --make-bed --out parisallwithpheno
+
+./plink --bfile LEAPwithpheno --exclude parisallwithpheno-merge.missnp --make-bed --out LEAPwithpheno
+./plink --bfile Parisexpresswithpheno --exclude parisallwithpheno-merge.missnp --make-bed --out Parisexpresswithpheno
+./plink --bfile Parisexomewithpheno --exclude parisallwithpheno-merge.missnp --make-bed --out Parisexomewithpheno
+
+./plink --bfile LEAPwithpheno --merge-list mergeparisfileswithpheno.txt --make-bed --out parisallwithpheno
+
 ```
