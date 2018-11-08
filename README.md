@@ -267,3 +267,24 @@ Now update in plink, and merge the files
 ./plink --bfile LEAPwithpheno --merge-list mergeparisfileswithpheno.txt --make-bed --out parisallwithpheno
 
 ```
+
+## Generate unrelated individuals and conduct PCA
+```bash
+./gcta64 --bfile ~/LEAP_PARIS/parisallwithpheno --maf 0.01 --make-grm --out PARISLEAPgrm --thread-num 10
+./gcta64 --grm PARISLEAPgrm --grm-cutoff 0.05 --make-grm --out PARISLEAPgrmunrelated
+
+./plink --bfile parisallwithpheno --keep ~/GCTA/PARISLEAPgrmunrelated.grm.id --make-bed --out parisallwithphenounrelated
+
+./plink --bfile ~/SFARI/liftOverPlink/hapmap3_hg19_eurfoundersonly --bmerge parisallwithphenounrelated --make-bed --out parisleaphapmap3forpc
+./plink --bfile ~/SFARI/liftOverPlink/hapmap3_hg19_eurfoundersonly --exclude parisleaphapmap3forpc-merge.missnp --make-bed --out Hapmap3_formerging
+./plink --bfile parisallwithphenounrelated  --exclude parisleaphapmap3forpc-merge.missnp --make-bed --out parisleapfileformerging
+./plink --bfile Hapmap3_formerging --bmerge parisleapfileformerging --make-bed --out parisleaphapmap3forpc
+
+./plink --bfile parisleaphapmap3forpc --geno 0.1 --hwe 0.000001 --make-bed --out parisleaphapmap3forpc
+
+./plink --bfile parisleaphapmap3forpc --maf 0.05 --indep-pairwise 100 50 0.2 --out parisleaphapmap3forpcpruned 
+
+./plink --bfile parisleaphapmap3forpc --exclude parisleaphapmap3forpcpruned.prune.out --pca --out SSC_pcaall
+```
+
+Now read the PCs into R and conduct 
