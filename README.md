@@ -284,7 +284,35 @@ Now update in plink, and merge the files
 
 ./plink --bfile parisleaphapmap3forpc --maf 0.05 --indep-pairwise 100 50 0.2 --out parisleaphapmap3forpcpruned 
 
-./plink --bfile parisleaphapmap3forpc --exclude parisleaphapmap3forpcpruned.prune.out --pca --out SSC_pcaall
+./plink --bfile parisleaphapmap3forpc --exclude parisleaphapmap3forpcpruned.prune.out --pca --out parisleap_pcaall
 ```
 
 Now read the PCs into R and conduct 
+
+```{R}
+library(data.table)
+library(plyr)
+pc = fread("parisleap_pcaall.eigenvec")
+selectedRows <- pc[grep("NA", pc$V2), ] #all the hapmapsamples have FID with NA
+
+#Calculate the mean and SD of PC1 and PC2 based on the hapmapsamples
+meanV1 = mean(selectedRows$V3)
+sdV1 = sd(selectedRows$V3)
+meanV2 = mean(selectedRows$V4)
+sdV2 = sd(selectedRows$V4)
+
+pc$ZPC1 = (abs(pc$V3 - meanV1))/sdV1
+pc$ZPC2 = (abs(pc$V4 - meanV2))/sdV2
+
+selectedRows2 <- pc[!grep("NA", pc$V2), ] #Now restrict it to the SSC samples
+PCOK = subset(selectedRows2, ZPC1 < 5 & ZPC2 < 5) #include only samples that are less than 5 SDs away from the mean
+
+PCOK = PCOK[,c(1:2)]
+
+write.table(PCOK, file = "keepfile.txt", row.names = F, col.names = F, quote = F)
+```
+
+Next, keep only individuals whose PCs are fine
+```bash
+./plink --bfile parisallwithphenounrelated --keep keepfile.txt --make-bed --out parisallphenounrelatedpcok 
+```
