@@ -318,6 +318,7 @@ Next, keep only individuals whose PCs are fine
 ```
 
 ## Merging files and conducting PGS
+# Please also see the R script in the attached file.
 
 ```{R}
 #Polygenic scores in the LEAP and the EU_AIMS cohort
@@ -387,4 +388,19 @@ pca = fread("parisleap_pcaall.eigenvec")
 setnames(pca, "V2", "IID")
 merged = merge(merged, pca, by = "IID")
 summary(lm(scale(RBS_total) ~ scale(`1.000000`) + as.factor(sex) + scale(V3) + scale(V4) + scale(V5) + scale(V6) + scale(V7) + scale(V8) + scale(V9) + scale(V10) + scale(V11) + scale(V12) , data = merged))
+```
+For meta-analysis please see the script uploaded
+
+## Combining CHOP, LEAP, and SSC, creating unrelated individuals and conducting bivariate GCTA-GREML
+
+```{bash}
+./plink --bfile CHOPQCunrelated --bmerge ~/LEAP_PARIS/parisallphenounrelatedpcok --make-bed --out CHOPLEAP
+./plink --bfile ~/LEAP_PARIS/parisallphenounrelatedpcok --exclude CHOPLEAP-merge.missnp --make-bed --out LEAPformerge
+./plink --bfile CHOPQCunrelated --exclude CHOPLEAP-merge.missnp --make-bed --out CHOPformerge
+./plink --bfile CHOPformerge --bmerge LEAPformerge --make-bed --out CHOPLEAP
+
+./plink --bfile CHOPLEAP --bmerge ~/SFARI/liftOverPlink/files_imputed/SFARImergedallcasesonly --make-bed --out CHOPLEAPSFARI
+
+./gcta64 --bfile ~/AGRE_data/CHOP/imputed_plinkfile/CHOPLEAPSFARI --make-grm --out allgrm --thread-num 10 --maf 0.01
+./gcta64 --grm Allgrm --grm-cutoff 0.05 --make-grm --out Allgrmunrelated --thread-num 20
 ```
